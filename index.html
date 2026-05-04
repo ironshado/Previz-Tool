@@ -1,0 +1,1607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PREVIZ — AI Shot Designer</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap');
+
+:root {
+  --bg: #0a0a0c;
+  --panel: #111116;
+  --border: #1e1e28;
+  --accent: #e8ff47;
+  --accent2: #ff4766;
+  --blue: #47aaff;
+  --text: #e8e8f0;
+  --muted: #555570;
+  --panel-w: 240px;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  overflow: hidden;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+}
+
+#header {
+  height: 42px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  gap: 10px;
+  flex-shrink: 0;
+  z-index: 200;
+}
+.logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  letter-spacing: 3px;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.logo span { color: var(--muted); font-size: 11px; letter-spacing: 1px; vertical-align: middle; margin-left: 6px; }
+.hsep { width: 1px; height: 22px; background: var(--border); flex-shrink: 0; }
+.hspacer { flex: 1; }
+.hbtn {
+  background: var(--border);
+  border: 1px solid #2a2a38;
+  color: var(--text);
+  padding: 4px 11px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  transition: all 0.12s;
+  white-space: nowrap;
+}
+.hbtn:hover { background: #1e1e2a; border-color: #3a3a50; }
+.hbtn.on { background: rgba(232,255,71,0.12); border-color: var(--accent); color: var(--accent); }
+.hbtn.capture { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 700; }
+.hbtn.capture:hover { background: #d4eb30; }
+
+#main { flex: 1; display: flex; overflow: hidden; min-height: 0; }
+
+#left-panel {
+  width: var(--panel-w);
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+.psec { padding: 11px 12px; border-bottom: 1px solid var(--border); }
+.plabel {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.fbtn {
+  display: flex; align-items: center; gap: 7px;
+  width: 100%; padding: 7px 10px;
+  background: var(--border); border: 1px solid #252530;
+  color: var(--text); border-radius: 5px; cursor: pointer;
+  font-family: 'DM Sans', sans-serif; font-size: 12px;
+  transition: all 0.12s; margin-bottom: 5px;
+}
+.fbtn:hover { background: #1a1a24; border-color: #353545; }
+.fbtn.man  { border-color: #1e3a6e; color: #7ab3ff; }
+.fbtn.man:hover { background: rgba(122,179,255,0.07); }
+.fbtn.woman { border-color: #6e1e45; color: #ff7ab3; }
+.fbtn.woman:hover { background: rgba(255,122,179,0.07); }
+.fbtn.del { border-color: #6e1e1e; color: #ff7a7a; }
+.fbtn.del:hover { background: rgba(255,122,122,0.07); }
+select {
+  width: 100%; background: var(--border); border: 1px solid #2a2a38;
+  color: var(--text); padding: 7px 9px; border-radius: 5px;
+  font-family: 'DM Sans', sans-serif; font-size: 12px;
+  cursor: pointer; margin-bottom: 6px; outline: none;
+}
+select:focus { border-color: var(--accent); }
+.mode-btns { display: flex; gap: 4px; }
+.mbtn {
+  flex: 1; padding: 6px 3px;
+  background: var(--border); border: 1px solid #252530;
+  color: var(--muted); border-radius: 4px; cursor: pointer;
+  font-family: 'Space Mono', monospace; font-size: 9px;
+  letter-spacing: 0.5px; text-align: center; transition: all 0.12s;
+}
+.mbtn:hover { color: var(--text); }
+.mbtn.on { background: rgba(232,255,71,0.1); border-color: var(--accent); color: var(--accent); }
+.togrow { display: flex; align-items: center; justify-content: space-between; margin-bottom: 7px; }
+.togrow label { font-size: 12px; }
+.tog {
+  width: 34px; height: 18px; background: var(--border); border-radius: 9px;
+  position: relative; cursor: pointer; border: 1px solid #2a2a38; transition: background 0.18s; flex-shrink: 0;
+}
+.tog.on { background: var(--accent); border-color: var(--accent); }
+.tog::after {
+  content: ''; position: absolute; width: 12px; height: 12px; background: #fff;
+  border-radius: 50%; top: 2px; left: 2px; transition: left 0.18s;
+}
+.tog.on::after { left: 18px; }
+#obj-list { max-height: 150px; overflow-y: auto; }
+.oi {
+  display: flex; align-items: center; padding: 5px 7px; border-radius: 4px;
+  cursor: pointer; margin-bottom: 2px; border: 1px solid transparent; transition: all 0.1s; font-size: 12px;
+}
+.oi:hover { background: var(--border); }
+.oi.sel { background: rgba(232,255,71,0.07); border-color: rgba(232,255,71,0.25); }
+.oi .on2 { flex: 1; }
+.oi .od { color: var(--muted); padding: 0 4px; font-size: 13px; transition: color 0.1s; }
+.oi .od:hover { color: var(--accent2); }
+#cam-xyz { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); line-height: 1.9; }
+#cam-xyz span { color: var(--accent); }
+
+#work-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+#vp-row { flex: 1; display: flex; min-height: 0; overflow: hidden; }
+
+/* SCENE EDITOR */
+#scene-editor { flex: 1; position: relative; overflow: hidden; background: #07070d; border-right: 2px solid var(--border); }
+#scene-canvas { display: block; width: 100%; height: 100%; }
+.vp-label {
+  position: absolute; top: 10px; left: 10px;
+  font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 2px;
+  color: var(--muted); pointer-events: none; z-index: 10; line-height: 1.7;
+}
+.vp-label .vlt { color: var(--accent); font-size: 10px; margin-bottom: 2px; }
+#ctrl-hint {
+  position: absolute; bottom: 10px; left: 10px;
+  font-family: 'Space Mono', monospace; font-size: 9px;
+  color: rgba(90,90,120,0.75); pointer-events: none; z-index: 10; line-height: 1.9;
+}
+#pivot-dot {
+  position: absolute; width: 8px; height: 8px;
+  background: var(--accent); border-radius: 50%;
+  pointer-events: none; transform: translate(-50%,-50%);
+  display: none; z-index: 20; box-shadow: 0 0 6px var(--accent);
+}
+
+/* CAMERA PREVIEW */
+#cam-preview {
+  position: relative; background: #04040a;
+  display: flex; flex-direction: column; flex-shrink: 0; width: 380px;
+}
+#cam-ph {
+  height: 32px; background: var(--panel); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 10px; gap: 8px; flex-shrink: 0;
+}
+#cam-ph .vpt { font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 2px; color: var(--blue); flex: 1; }
+#cam-pb {
+  flex: 1; position: relative; display: flex; align-items: center;
+  justify-content: center; overflow: hidden;
+}
+#cam-wrap {
+  position: relative; flex-shrink: 0;
+}
+#cam-wrap::before, #cam-wrap::after {
+  content: ''; position: absolute; left: 0; right: 0; height: 2px;
+  background: rgba(71,170,255,0.4); z-index: 5; pointer-events: none;
+}
+#cam-wrap::before { top: 0; }
+#cam-wrap::after  { bottom: 0; }
+.vfc { position: absolute; width: 10px; height: 10px; border-color: var(--blue); border-style: solid; z-index: 6; pointer-events: none; }
+.vfc.tl { top:0;left:0; border-width:2px 0 0 2px; }
+.vfc.tr { top:0;right:0; border-width:2px 2px 0 0; }
+.vfc.bl { bottom:0;left:0; border-width:0 0 2px 2px; }
+.vfc.br { bottom:0;right:0; border-width:0 2px 2px 0; }
+#cam-canvas { display: block; }
+#doodle-canvas { position: absolute; top:0; left:0; cursor: crosshair; }
+#rof-overlay { position: absolute; inset:0; pointer-events:none; z-index:4; display:none; }
+#rof-overlay.show { display: block; }
+
+#doodle-panel {
+  height: 88px; background: var(--panel); border-top: 1px solid var(--border);
+  padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; flex-shrink: 0;
+}
+.dtrow { display: flex; gap: 4px; }
+.dtbtn {
+  flex: 1; padding: 5px 3px;
+  background: var(--border); border: 1px solid #252530;
+  color: var(--muted); border-radius: 4px; cursor: pointer;
+  font-family: 'Space Mono', monospace; font-size: 8px;
+  letter-spacing: 0.5px; text-align: center; transition: all 0.12s;
+}
+.dtbtn:hover { color: var(--text); }
+.dtbtn.on { background: rgba(71,170,255,0.1); border-color: var(--blue); color: var(--blue); }
+.dcols { display: flex; align-items: center; gap: 5px; }
+.dc { width:16px;height:16px;border-radius:50%;cursor:pointer;border:1px solid transparent;transition:transform 0.1s;flex-shrink:0; }
+.dc:hover { transform: scale(1.25); }
+.dc.on { border-color: #fff; }
+.dszrow { display: flex; align-items: center; gap: 6px; flex: 1; }
+.dszrow input { flex:1; accent-color: var(--blue); }
+.dszrow span { font-family:'Space Mono',monospace; font-size:9px; color:var(--muted); white-space:nowrap; }
+
+#status {
+  height: 26px; background: var(--panel); border-top: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 14px; gap: 18px; flex-shrink: 0;
+}
+.si { font-family:'Space Mono',monospace; font-size:9px; color:var(--muted); letter-spacing:0.5px; }
+.si b { color:var(--text); font-weight:400; }
+
+#notif {
+  position: fixed; bottom: 36px; left: 50%;
+  transform: translateX(-50%) translateY(14px);
+  background: var(--accent); color: #000;
+  padding: 7px 18px; border-radius: 20px;
+  font-family: 'Space Mono',monospace; font-size: 11px; font-weight: 700;
+  opacity: 0; transition: all 0.25s; pointer-events: none; z-index: 9999;
+}
+#notif.show { opacity:1; transform: translateX(-50%) translateY(0); }
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* Wall draw mode */
+#wall-draw-hint {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(232,255,71,0.1);
+  border: 1px solid rgba(232,255,71,0.4);
+  color: var(--accent);
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 1px;
+  padding: 10px 20px;
+  border-radius: 6px;
+  pointer-events: none;
+  display: none;
+  z-index: 30;
+  text-align: center;
+  line-height: 1.7;
+}
+#wall-draw-hint.show { display: block; }
+
+.wall-preview-line {
+  position: absolute;
+  pointer-events: none;
+  z-index: 25;
+}
+
+/* wall size/material row */
+.wall-opts { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px; }
+.wopt {
+  flex: 1; min-width: calc(50% - 2px);
+  padding: 6px 4px;
+  background: var(--border); border: 1px solid #252530;
+  color: var(--muted); border-radius: 4px; cursor: pointer;
+  font-family: 'Space Mono', monospace; font-size: 9px;
+  letter-spacing: 0.5px; text-align: center; transition: all 0.12s;
+}
+.wopt:hover { color: var(--text); }
+.wopt.on { background: rgba(232,255,71,0.1); border-color: var(--accent); color: var(--accent); }
+
+.mat-dots { display: flex; gap: 5px; margin-top: 4px; flex-wrap: wrap; }
+.mat-dot {
+  width: 20px; height: 20px;
+  border-radius: 3px; cursor: pointer;
+  border: 2px solid transparent; transition: transform 0.1s;
+  flex-shrink: 0;
+}
+.mat-dot:hover { transform: scale(1.2); }
+.mat-dot.on { border-color: #fff; }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div class="logo">PREVIZ <span>// AI SHOT DESIGNER</span></div>
+  <div class="hsep"></div>
+  <button class="hbtn on" id="btn-grid">⊞ GRID</button>
+  <button class="hbtn" id="btn-rof">⊟ 3RDS</button>
+  <div class="hsep"></div>
+  <select id="aspect-sel" style="width:auto;margin:0;padding:4px 8px;font-size:11px;">
+    <option value="16x9">16:9</option>
+    <option value="9x16">9:16</option>
+    <option value="4x3">4:3</option>
+    <option value="1x1">1:1</option>
+  </select>
+  <div class="hsep"></div>
+  <button class="hbtn" id="btn-savecam">📷 SAVE CAM</button>
+  <div class="hspacer"></div>
+  <button class="hbtn capture" id="btn-capture">⬇ CAPTURE SHOT</button>
+</div>
+
+<div id="main">
+  <div id="left-panel">
+    <div class="psec">
+      <div class="plabel">Scene</div>
+      <select id="scene-sel">
+        <option value="cafe">☕ Cafe</option>
+        <option value="park">🌿 Park</option>
+        <option value="office">🏢 Office</option>
+        <option value="studio">🎬 Studio</option>
+        <option value="street">🌆 Street</option>
+      </select>
+    </div>
+    <div class="psec">
+      <div class="plabel">Characters</div>
+      <button class="fbtn man" id="btn-man">🧍 Spawn Man</button>
+      <button class="fbtn woman" id="btn-woman">🧍‍♀️ Spawn Woman</button>
+    </div>
+    <div class="psec">
+      <div class="plabel">Add Props</div>
+      <button class="fbtn" data-prop="table">📦 Table</button>
+      <button class="fbtn" data-prop="chair">🪑 Chair</button>
+      <button class="fbtn" data-prop="lamp">💡 Lamp Post</button>
+      <button class="fbtn" data-prop="camrig">🎥 Camera Rig</button>
+    </div>
+
+    <div class="psec">
+      <div class="plabel">Walls</div>
+      <button class="fbtn" id="btn-wall-draw" style="border-color:#2a4a2a;color:#7aff9a;margin-bottom:8px">
+        🧱 Draw Wall on Ground
+      </button>
+      <div class="plabel" style="margin-bottom:5px">Preset Size</div>
+      <div class="wall-opts">
+        <button class="wopt on" data-wsize="small">SHORT<br><span style="color:var(--muted);font-size:8px">1m</span></button>
+        <button class="wopt" data-wsize="medium">MED<br><span style="color:var(--muted);font-size:8px">3m</span></button>
+        <button class="wopt" data-wsize="large">LONG<br><span style="color:var(--muted);font-size:8px">6m</span></button>
+        <button class="wopt" data-wsize="door">DOOR<br><span style="color:var(--muted);font-size:8px">+gap</span></button>
+      </div>
+      <div class="plabel" style="margin-bottom:4px;margin-top:6px">Height</div>
+      <input type="range" id="wall-h-slider" min="1" max="6" step="0.5" value="2.5"
+        style="width:100%;accent-color:var(--accent);margin-bottom:3px">
+      <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--muted)">H: <span id="wall-h-val">2.5</span>m</div>
+      <div class="plabel" style="margin-bottom:4px;margin-top:6px">Material</div>
+      <div class="mat-dots" id="wall-mat-dots"></div>
+    </div>
+    <div class="psec">
+      <div class="plabel">Transform (G/R/S)</div>
+      <div class="mode-btns">
+        <button class="mbtn on" data-mode="translate">MOVE</button>
+        <button class="mbtn" data-mode="rotate">ROT</button>
+        <button class="mbtn" data-mode="scale">SCALE</button>
+      </div>
+    </div>
+    <div class="psec">
+      <div class="plabel">Scene Objects <span style="color:var(--text)" id="st-count">0</span></div>
+      <div id="obj-list"></div>
+      <button class="fbtn del" id="btn-desel" style="margin-top:4px">✕ Deselect (Esc)</button>
+    </div>
+    <div class="psec">
+      <div class="plabel">Visibility</div>
+      <div class="togrow"><label>Ground</label><div class="tog on" data-tg="ground"></div></div>
+      <div class="togrow"><label>Shadows</label><div class="tog on" data-tg="shadows"></div></div>
+      <div class="togrow"><label>Scene Props</label><div class="tog on" data-tg="props"></div></div>
+    </div>
+    <div class="psec" style="flex:1">
+      <div class="plabel">Shot Camera</div>
+      <div id="cam-xyz">
+        X: <span id="cx">0.00</span><br>
+        Y: <span id="cy">0.00</span><br>
+        Z: <span id="cz">0.00</span><br>
+        FOV: <span id="cfov">45</span>°
+      </div>
+      <div style="margin-top:10px">
+        <div class="plabel" style="margin-bottom:5px">FOV</div>
+        <input type="range" id="fov-slider" min="15" max="100" value="45" style="width:100%;accent-color:var(--accent)">
+      </div>
+    </div>
+  </div>
+
+  <div id="work-area">
+    <div id="vp-row">
+
+      <!-- SCENE EDITOR -->
+      <div id="scene-editor">
+        <canvas id="scene-canvas"></canvas>
+        <div class="vp-label">
+          <div class="vlt">SCENE EDITOR</div>
+          <div>MMB=ORBIT · SCROLL=ZOOM · RMB=PAN</div>
+          <div style="margin-top:4px;color:rgba(80,80,110,0.7)">NUM1=FRONT · NUM3=SIDE · NUM7=TOP</div>
+        </div>
+        <div id="ctrl-hint">
+          G = Move &nbsp;·&nbsp; R = Rotate &nbsp;·&nbsp; S = Scale &nbsp;·&nbsp; F = Frame<br>
+          Del = Delete &nbsp;·&nbsp; Esc = Deselect &nbsp;·&nbsp; Num0 = Cam View
+        </div>
+        <div id="pivot-dot"></div>
+        <div id="wall-draw-hint">
+          🧱 WALL DRAW MODE<br>
+          <span style="color:var(--muted)">Click = place · Click+drag = draw length · Esc = exit</span>
+        </div>
+        <canvas id="wall-preview-canvas" style="position:absolute;inset:0;pointer-events:none;z-index:15;"></canvas>
+      </div>
+
+      <!-- CAMERA PREVIEW -->
+      <div id="cam-preview">
+        <div id="cam-ph">
+          <div class="vpt">📷 CAMERA PREVIEW</div>
+          <button class="hbtn on" id="btn-link-cam" title="Mirror left panel navigation into shot camera" style="font-size:9px;padding:3px 8px;background:rgba(232,255,71,0.12);border-color:var(--accent);color:var(--accent);">🔗 LINKED</button>
+          <select id="aspect-sel2" style="width:auto;margin:0;padding:3px 7px;font-size:10px;background:var(--bg);border-color:#2a2a38;color:var(--text);">
+            <option value="16x9">16:9</option>
+            <option value="9x16">9:16</option>
+            <option value="4x3">4:3</option>
+            <option value="1x1">1:1</option>
+          </select>
+        </div>
+        <div id="cam-pb">
+          <div id="cam-wrap">
+            <div class="vfc tl"></div><div class="vfc tr"></div>
+            <div class="vfc bl"></div><div class="vfc br"></div>
+            <canvas id="cam-canvas"></canvas>
+            <canvas id="doodle-canvas"></canvas>
+            <svg id="rof-overlay" xmlns="http://www.w3.org/2000/svg">
+              <line x1="33.3%" y1="0" x2="33.3%" y2="100%" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+              <line x1="66.6%" y1="0" x2="66.6%" y2="100%" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+              <line x1="0" y1="33.3%" x2="100%" y2="33.3%" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+              <line x1="0" y1="66.6%" x2="100%" y2="66.6%" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+            </svg>
+          </div>
+        </div>
+        <div id="doodle-panel">
+          <div class="dtrow">
+            <button class="dtbtn on" data-dt="pen">✏ PEN</button>
+            <button class="dtbtn" data-dt="arrow">→ ARROW</button>
+            <button class="dtbtn" data-dt="text">T TEXT</button>
+            <button class="dtbtn" data-dt="erase">◻ ERASE</button>
+            <button class="dtbtn" data-dt="undo">↩ UNDO</button>
+            <button class="dtbtn" data-dt="clear" style="color:var(--accent2)">✕ CLR</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div class="dcols" id="dcols"></div>
+            <div class="dszrow">
+              <input type="range" id="brush-sz" min="1" max="18" value="3">
+              <span>SZ:<b id="sz-val">3</b></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div id="status">
+      <div class="si">SCENE: <b id="st-scene">CAFE</b></div>
+      <div class="si">SEL: <b id="st-sel">—</b></div>
+      <div class="si">CAM POS: <b id="st-cam">—</b></div>
+      <div class="si" style="color:rgba(80,80,120,0.8)">LEFT VP = FREE NAV · RIGHT VP = SHOT CAM · BOTH: MMB=ORBIT RMB=PAN SCROLL=ZOOM</div>
+    </div>
+  </div>
+</div>
+
+<div id="notif"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js"></script>
+<script>
+'use strict';
+
+// ══════════════════════════════════════════
+// SCENE
+// ══════════════════════════════════════════
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x07070d, 0.032);
+
+// Lighting
+const ambientLight = new THREE.AmbientLight(0x334466, 0.9);
+scene.add(ambientLight);
+const sunLight = new THREE.DirectionalLight(0xfff5e0, 1.6);
+sunLight.position.set(12,22,8);
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.width = sunLight.shadow.mapSize.height = 2048;
+sunLight.shadow.camera.near = 0.5; sunLight.shadow.camera.far = 200;
+sunLight.shadow.camera.left = sunLight.shadow.camera.bottom = -25;
+sunLight.shadow.camera.right = sunLight.shadow.camera.top = 25;
+scene.add(sunLight);
+const fillLight = new THREE.PointLight(0x4466cc, 0.4, 40);
+fillLight.position.set(-10,5,-5);
+scene.add(fillLight);
+
+// Ground & grid
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(60,60),
+  new THREE.MeshLambertMaterial({color:0x1a1a22})
+);
+ground.rotation.x = -Math.PI/2; ground.position.y = -0.01; ground.receiveShadow = true;
+scene.add(ground);
+const gridHelper = new THREE.GridHelper(60,60,0x1e1e30,0x171724);
+scene.add(gridHelper);
+
+let scenePropsGroup = new THREE.Group();
+scene.add(scenePropsGroup);
+let userObjects = [];
+let selectedObj = null;
+let currentSceneName = 'cafe';
+
+// ══════════════════════════════════════════
+// EDITOR RENDERER & CAMERA
+// ══════════════════════════════════════════
+const sceneCanvas = document.getElementById('scene-canvas');
+const sceneEditor = document.getElementById('scene-editor');
+const renderer = new THREE.WebGLRenderer({canvas:sceneCanvas, antialias:true, preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.setClearColor(0x07070d);
+
+const editorCam = new THREE.PerspectiveCamera(55, 1, 0.05, 500);
+editorCam.position.set(8, 6, 10);
+
+// ══════════════════════════════════════════
+// SHOT CAMERA RENDERER & CAMERA
+// ══════════════════════════════════════════
+const camCanvas = document.getElementById('cam-canvas');
+const camRenderer = new THREE.WebGLRenderer({canvas:camCanvas, antialias:true, preserveDrawingBuffer:true});
+camRenderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+camRenderer.shadowMap.enabled = true;
+camRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
+camRenderer.setClearColor(0x04040a);
+
+const shotCam = new THREE.PerspectiveCamera(45, 16/9, 0.05, 500);
+shotCam.position.set(0, 1.7, 6);
+shotCam.lookAt(0, 1.2, 0);
+
+// Shot cam visual helper in scene editor
+const camHelperMesh = new THREE.Mesh(
+  (() => { const g = new THREE.ConeGeometry(0.2,0.55,8); g.rotateX(-Math.PI/2); return g; })(),
+  new THREE.MeshLambertMaterial({color:0x47aaff, transparent:true, opacity:0.85})
+);
+scene.add(camHelperMesh);
+const camLineMat = new THREE.LineBasicMaterial({color:0x47aaff, transparent:true, opacity:0.35});
+const camLineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+const camTargetLine = new THREE.Line(camLineGeo, camLineMat);
+scene.add(camTargetLine);
+
+// ══════════════════════════════════════════
+// BLENDER-STYLE ORBIT — shared by both viewports
+// ══════════════════════════════════════════
+function makeOrbit(cam, initialPos, initialTarget) {
+  const state = {
+    cam,
+    target: initialTarget.clone(),
+    sph: new THREE.Spherical(),
+    orbiting: false,
+    panning: false,
+    lx: 0, ly: 0,
+    orbitSpeed: 0.005,
+    panSpeed: 0.006,
+    zoomSpeed: 0.11,
+  };
+  const offset = initialPos.clone().sub(state.target);
+  state.sph.setFromVector3(offset);
+
+  state.update = function() {
+    const off = new THREE.Vector3().setFromSpherical(this.sph);
+    this.cam.position.copy(this.target).add(off);
+    this.cam.lookAt(this.target);
+  };
+  state.orbit = function(dx, dy) {
+    this.sph.theta -= dx * this.orbitSpeed;
+    this.sph.phi   -= dy * this.orbitSpeed;
+    this.sph.phi = Math.max(0.04, Math.min(Math.PI - 0.04, this.sph.phi));
+    this.update();
+  };
+  state.pan = function(dx, dy) {
+    const right = new THREE.Vector3().setFromMatrixColumn(this.cam.matrix, 0);
+    const up    = new THREE.Vector3().setFromMatrixColumn(this.cam.matrix, 1);
+    const d = this.sph.radius * this.panSpeed;
+    this.target.addScaledVector(right, -dx * d);
+    this.target.addScaledVector(up,     dy * d);
+    this.update();
+  };
+  state.zoom = function(dir) {
+    this.sph.radius *= 1 + dir * this.zoomSpeed;
+    this.sph.radius = Math.max(0.4, Math.min(180, this.sph.radius));
+    this.update();
+  };
+  state.update();
+  return state;
+}
+
+const editorOrbit = makeOrbit(editorCam, new THREE.Vector3(8,6,10), new THREE.Vector3(0,0,0));
+const shotOrbit   = makeOrbit(shotCam,   new THREE.Vector3(0,1.7,6), new THREE.Vector3(0,1.2,0));
+
+// ══════════════════════════════════════════
+// MOUSE EVENTS — EDITOR VIEWPORT
+// ══════════════════════════════════════════
+let shiftDown = false;
+let txDragging = false;
+
+sceneCanvas.addEventListener('contextmenu', e => e.preventDefault());
+sceneCanvas.addEventListener('mousedown', e => {
+  if (txDragging) return;
+  // In wall draw mode: MMB still orbits, RMB still pans, LMB handled by capture listener
+  if (wallDrawMode) {
+    editorOrbit.lx = e.clientX; editorOrbit.ly = e.clientY;
+    if (e.button === 1) { editorOrbit.orbiting = true; e.preventDefault(); }
+    if (e.button === 2) { editorOrbit.panning = true; }
+    return;
+  }
+  editorOrbit.lx = e.clientX; editorOrbit.ly = e.clientY;
+  if (e.button === 1) { editorOrbit.orbiting = true; e.preventDefault(); }
+  if (e.button === 2) { editorOrbit.panning = true; }
+  if (e.button === 0) { handleSelection(e); }
+});
+sceneCanvas.addEventListener('wheel', e => { e.preventDefault(); editorOrbit.zoom(e.deltaY > 0 ? 1 : -1); }, {passive:false});
+
+// ══════════════════════════════════════════
+// MOUSE EVENTS — SHOT CAM VIEWPORT
+// ══════════════════════════════════════════
+camCanvas.addEventListener('contextmenu', e => e.preventDefault());
+camCanvas.addEventListener('mousedown', e => {
+  shotOrbit.lx = e.clientX; shotOrbit.ly = e.clientY;
+  if (e.button === 0 || e.button === 1) { shotOrbit.orbiting = true; e.preventDefault(); }
+  if (e.button === 2) { shotOrbit.panning = true; }
+});
+camCanvas.addEventListener('wheel', e => { e.preventDefault(); shotOrbit.zoom(e.deltaY > 0 ? 1 : -1); }, {passive:false});
+
+// ══════════════════════════════════════════
+// GLOBAL MOUSE MOVE / UP
+// ══════════════════════════════════════════
+window.addEventListener('mousemove', e => {
+  if (!txDragging) {
+    const dx = e.clientX - editorOrbit.lx;
+    const dy = e.clientY - editorOrbit.ly;
+    editorOrbit.lx = e.clientX; editorOrbit.ly = e.clientY;
+    if (editorOrbit.orbiting && !shiftDown) editorOrbit.orbit(dx, dy);
+    if (editorOrbit.panning  || (editorOrbit.orbiting && shiftDown)) editorOrbit.pan(dx, dy);
+  }
+
+  const sdx = e.clientX - shotOrbit.lx;
+  const sdy = e.clientY - shotOrbit.ly;
+  shotOrbit.lx = e.clientX; shotOrbit.ly = e.clientY;
+  if (shotOrbit.orbiting && !shiftDown) shotOrbit.orbit(sdx, sdy);
+  if (shotOrbit.panning  || (shotOrbit.orbiting && shiftDown)) shotOrbit.pan(sdx, sdy);
+});
+
+window.addEventListener('mouseup', e => {
+  if (e.button === 0 || e.button === 1) { editorOrbit.orbiting = false; shotOrbit.orbiting = false; }
+  if (e.button === 2) { editorOrbit.panning = false; shotOrbit.panning = false; }
+});
+
+// ══════════════════════════════════════════
+// KEYBOARD
+// ══════════════════════════════════════════
+window.addEventListener('keydown', e => {
+  shiftDown = e.shiftKey;
+  if (e.key === 'g' || e.key === 'G') setTxMode('translate');
+  if (e.key === 'r' || e.key === 'R') setTxMode('rotate');
+  if (e.key === 's' || e.key === 'S') setTxMode('scale');
+  if (e.key === 'Delete' || e.key === 'Backspace') deleteSelected();
+  if (e.key === 'Escape') { deselectAll(); if (wallDrawMode) setWallDrawMode(false); }
+  if (e.key === 'f' || e.key === 'F') frameSelected();
+  // Numpad presets (editor cam)
+  if (e.code === 'Numpad1') { editorOrbit.sph.theta=0; editorOrbit.sph.phi=Math.PI/2; editorOrbit.update(); showNotif('Front View'); }
+  if (e.code === 'Numpad3') { editorOrbit.sph.theta=-Math.PI/2; editorOrbit.sph.phi=Math.PI/2; editorOrbit.update(); showNotif('Right View'); }
+  if (e.code === 'Numpad7') { editorOrbit.sph.theta=0; editorOrbit.sph.phi=0.05; editorOrbit.update(); showNotif('Top View'); }
+  if (e.code === 'Numpad9') { editorOrbit.sph.theta=Math.PI; editorOrbit.sph.phi=Math.PI/2; editorOrbit.update(); showNotif('Back View'); }
+  if (e.code === 'Numpad0') { syncEditorToShotCam(); }
+});
+window.addEventListener('keyup', e => { shiftDown = e.shiftKey; });
+
+function syncEditorToShotCam() {
+  editorCam.position.copy(shotCam.position);
+  editorCam.quaternion.copy(shotCam.quaternion);
+  const fwd = new THREE.Vector3(0,0,-1).applyQuaternion(shotCam.quaternion);
+  editorOrbit.target.copy(shotCam.position).addScaledVector(fwd, 5);
+  const off = editorCam.position.clone().sub(editorOrbit.target);
+  editorOrbit.sph.setFromVector3(off);
+  editorOrbit.update();
+  showNotif('Synced editor to shot camera (Numpad 0)');
+}
+
+function frameSelected() {
+  const obj = selectedObj;
+  if (!obj) { editorOrbit.target.set(0,0,0); editorOrbit.sph.radius=14; editorOrbit.update(); return; }
+  const box = new THREE.Box3().setFromObject(obj);
+  const center = box.getCenter(new THREE.Vector3());
+  const size = box.getSize(new THREE.Vector3()).length();
+  editorOrbit.target.copy(center);
+  editorOrbit.sph.radius = size * 2.2;
+  editorOrbit.update();
+  showPivot(center);
+}
+
+const pivotDot = document.getElementById('pivot-dot');
+function showPivot(wp) {
+  const rect = sceneEditor.getBoundingClientRect();
+  const ndc = wp.clone().project(editorCam);
+  pivotDot.style.left = ((ndc.x+1)/2*rect.width)+'px';
+  pivotDot.style.top  = ((-ndc.y+1)/2*rect.height)+'px';
+  pivotDot.style.display = 'block';
+  clearTimeout(pivotDot._t);
+  pivotDot._t = setTimeout(()=>pivotDot.style.display='none', 800);
+}
+
+// ══════════════════════════════════════════
+// TRANSFORM CONTROLS
+// ══════════════════════════════════════════
+const txCtrl = new THREE.TransformControls(editorCam, sceneCanvas);
+txCtrl.addEventListener('dragging-changed', e => {
+  txDragging = e.value;
+  if (e.value) { editorOrbit.orbiting = false; editorOrbit.panning = false; }
+});
+scene.add(txCtrl);
+let txMode = 'translate';
+function setTxMode(m) {
+  txMode = m;
+  txCtrl.setMode(m);
+  document.querySelectorAll('.mbtn').forEach(b => b.classList.toggle('on', b.dataset.mode===m));
+}
+
+// ══════════════════════════════════════════
+// PROP BUILDERS
+// ══════════════════════════════════════════
+function mkTable() {
+  const g = new THREE.Group();
+  const top = new THREE.Mesh(new THREE.CylinderGeometry(0.55,0.55,0.06,16), new THREE.MeshLambertMaterial({color:0x9b6e3c}));
+  top.position.y=0.8; top.castShadow=true; g.add(top);
+  const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.04,0.8,8), new THREE.MeshLambertMaterial({color:0x6b4020}));
+  leg.position.y=0.4; g.add(leg);
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.28,0.28,0.04,16), new THREE.MeshLambertMaterial({color:0x6b4020}));
+  base.position.y=0.02; g.add(base);
+  return g;
+}
+function mkChair() {
+  const g = new THREE.Group();
+  const mat = new THREE.MeshLambertMaterial({color:0x9b6e3c});
+  const lm  = new THREE.MeshLambertMaterial({color:0x5a3a20});
+  const seat = new THREE.Mesh(new THREE.BoxGeometry(0.44,0.05,0.44), mat);
+  seat.position.y=0.5; seat.castShadow=true; g.add(seat);
+  const back = new THREE.Mesh(new THREE.BoxGeometry(0.44,0.44,0.05), mat);
+  back.position.set(0,0.75,-0.2); g.add(back);
+  [[-0.17,0,-0.17],[0.17,0,-0.17],[-0.17,0,0.17],[0.17,0,0.17]].forEach(([x,y,z])=>{
+    const l = new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,0.5,6), lm);
+    l.position.set(x,0.25,z); g.add(l);
+  });
+  return g;
+}
+function mkDesk() {
+  const g = new THREE.Group();
+  const top = new THREE.Mesh(new THREE.BoxGeometry(1.4,0.05,0.7), new THREE.MeshLambertMaterial({color:0x5a7a9a}));
+  top.position.y=0.75; top.castShadow=true; g.add(top);
+  const scr = new THREE.Mesh(new THREE.BoxGeometry(0.5,0.35,0.03), new THREE.MeshLambertMaterial({color:0x0a0a18}));
+  scr.position.set(0,1.05,-0.25); g.add(scr);
+  const glow = new THREE.Mesh(new THREE.BoxGeometry(0.44,0.3,0.01), new THREE.MeshLambertMaterial({color:0x223366,emissive:0x112244,emissiveIntensity:0.6}));
+  glow.position.set(0,1.05,-0.24); g.add(glow);
+  const lm = new THREE.MeshLambertMaterial({color:0x404050});
+  [[-0.65,0,0.3],[0.65,0,0.3],[-0.65,0,-0.3],[0.65,0,-0.3]].forEach(([x,y,z])=>{
+    const l = new THREE.Mesh(new THREE.BoxGeometry(0.05,0.75,0.05),lm); l.position.set(x,0.375,z); g.add(l);
+  });
+  return g;
+}
+function mkTree() {
+  const g = new THREE.Group();
+  const tr = new THREE.Mesh(new THREE.CylinderGeometry(0.11,0.17,1.6,8), new THREE.MeshLambertMaterial({color:0x5a3a18}));
+  tr.position.y=0.8; tr.castShadow=true; g.add(tr);
+  [[1.8,1.2,0x2d6b2a],[2.6,1.0,0x246022],[3.3,0.8,0x1e5018]].forEach(([y,r,c])=>{
+    const f = new THREE.Mesh(new THREE.ConeGeometry(r,0.9,8), new THREE.MeshLambertMaterial({color:c}));
+    f.position.y=y; f.castShadow=true; g.add(f);
+  });
+  return g;
+}
+function mkBench() {
+  const g = new THREE.Group();
+  const mat = new THREE.MeshLambertMaterial({color:0x9b7050});
+  const lm  = new THREE.MeshLambertMaterial({color:0x404425});
+  const seat = new THREE.Mesh(new THREE.BoxGeometry(1.5,0.06,0.4),mat);
+  seat.position.y=0.5; seat.castShadow=true; g.add(seat);
+  const back = new THREE.Mesh(new THREE.BoxGeometry(1.5,0.4,0.05),mat);
+  back.position.set(0,0.75,-0.17); g.add(back);
+  [[-0.6],[0.6]].forEach(([x])=>{
+    const l = new THREE.Mesh(new THREE.BoxGeometry(0.06,0.5,0.4),lm); l.position.set(x,0.25,0); g.add(l);
+  });
+  return g;
+}
+function mkLamp() {
+  const g = new THREE.Group();
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.07,3.5,8), new THREE.MeshLambertMaterial({color:0x334444}));
+  pole.position.y=1.75; pole.castShadow=true; g.add(pole);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.2,8,8), new THREE.MeshLambertMaterial({color:0xffffaa,emissive:0xffee44,emissiveIntensity:0.8}));
+  head.position.y=3.6; g.add(head);
+  return g;
+}
+function mkCamRig() {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.3,0.25,0.5), new THREE.MeshLambertMaterial({color:0x1a1a22}));
+  body.position.y=1.4; body.castShadow=true; g.add(body);
+  const lens = new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.1,0.3,12), new THREE.MeshLambertMaterial({color:0x0a0a0a}));
+  lens.rotation.x=Math.PI/2; lens.position.set(0,1.4,0.4); g.add(lens);
+  const tp = new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,1.4,6), new THREE.MeshLambertMaterial({color:0x444444}));
+  tp.position.y=0.7; g.add(tp);
+  return g;
+}
+function mkLightRig() {
+  const g = new THREE.Group();
+  const st = new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,2.5,6), new THREE.MeshLambertMaterial({color:0x555555}));
+  st.position.y=1.25; g.add(st);
+  const panel = new THREE.Mesh(new THREE.BoxGeometry(0.8,0.5,0.06), new THREE.MeshLambertMaterial({color:0xfffff0,emissive:0xffff88,emissiveIntensity:0.6}));
+  panel.position.y=2.6; g.add(panel);
+  return g;
+}
+
+function buildProp(type) {
+  switch(type) {
+    case 'table':    return mkTable();
+    case 'chair':    return mkChair();
+    case 'desk':     return mkDesk();
+    case 'tree':     return mkTree();
+    case 'bench':    return mkBench();
+    case 'lamp':     return mkLamp();
+    case 'camrig':   return mkCamRig();
+    case 'lightrig': return mkLightRig();
+    default:         return mkTable();
+  }
+}
+
+// ══════════════════════════════════════════
+// WALL SYSTEM
+// ══════════════════════════════════════════
+const WALL_MATS = [
+  { label:'Concrete', color:0x888898, rough:true },
+  { label:'White',    color:0xf0eeee, rough:false },
+  { label:'Brick',    color:0x8b4a2a, rough:true },
+  { label:'Glass',    color:0x88ccee, rough:false, transparent:true, opacity:0.35 },
+  { label:'Wood',     color:0xa0703a, rough:true },
+  { label:'Dark',     color:0x1e1e28, rough:false },
+];
+
+let wallMatIdx = 0;
+let wallHeight = 2.5;
+let wallPreset = 'small';  // small/medium/large/door
+let wallDrawMode = false;
+let wallDrawStart = null;   // THREE.Vector3 world pos
+let wallIdx = 0;
+
+const WALL_PRESET_W = { small:1, medium:3, large:6, door:1.2 };
+const WALL_THICKNESS = 0.18;
+
+// Build a wall mesh group
+function mkWall(width, height, matCfg, hasDoor) {
+  const g = new THREE.Group();
+  g.userData.isWall = true;
+
+  const mat = new THREE.MeshLambertMaterial({
+    color: matCfg.color,
+    transparent: !!matCfg.transparent,
+    opacity: matCfg.opacity !== undefined ? matCfg.opacity : 1.0,
+    side: THREE.DoubleSide,
+  });
+
+  if (hasDoor) {
+    // Wall with doorway cutout — built from 3 boxes: left panel, right panel, top beam
+    const doorW = Math.min(0.9, width * 0.45);
+    const doorH = Math.min(2.1, height * 0.85);
+    const sideW = Math.max(0.05, (width - doorW) / 2);
+
+    // left panel
+    if (sideW > 0.01) {
+      const lp = new THREE.Mesh(new THREE.BoxGeometry(sideW, height, WALL_THICKNESS), mat);
+      lp.position.set(-(doorW/2 + sideW/2), height/2, 0);
+      lp.castShadow = true; lp.receiveShadow = true;
+      g.add(lp);
+    }
+    // right panel
+    if (sideW > 0.01) {
+      const rp = new THREE.Mesh(new THREE.BoxGeometry(sideW, height, WALL_THICKNESS), mat);
+      rp.position.set(doorW/2 + sideW/2, height/2, 0);
+      rp.castShadow = true; rp.receiveShadow = true;
+      g.add(rp);
+    }
+    // top beam
+    const topH = height - doorH;
+    if (topH > 0.01) {
+      const tb = new THREE.Mesh(new THREE.BoxGeometry(width, topH, WALL_THICKNESS), mat);
+      tb.position.set(0, doorH + topH/2, 0);
+      tb.castShadow = true; tb.receiveShadow = true;
+      g.add(tb);
+    }
+    // door frame
+    const frameMat = new THREE.MeshLambertMaterial({ color: 0x5a3a20 });
+    const faceW = 0.05;
+    // left jamb
+    const lj = new THREE.Mesh(new THREE.BoxGeometry(faceW, doorH, WALL_THICKNESS+0.04), frameMat);
+    lj.position.set(-doorW/2 - faceW/2, doorH/2, 0); g.add(lj);
+    // right jamb
+    const rj = lj.clone(); rj.position.x = doorW/2 + faceW/2; g.add(rj);
+    // top
+    const tj = new THREE.Mesh(new THREE.BoxGeometry(doorW + faceW*2, faceW, WALL_THICKNESS+0.04), frameMat);
+    tj.position.set(0, doorH + faceW/2, 0); g.add(tj);
+  } else {
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(width, height, WALL_THICKNESS), mat);
+    mesh.position.y = height / 2;
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    g.add(mesh);
+  }
+
+  return g;
+}
+
+// Place a wall from two world-space points (start/end on ground)
+function placeWallFromPoints(p1, p2, matCfg, height, hasDoor) {
+  const dx = p2.x - p1.x;
+  const dz = p2.z - p1.z;
+  const len = Math.sqrt(dx*dx + dz*dz);
+  if (len < 0.1) return null;
+
+  const wall = mkWall(len, height, matCfg, hasDoor);
+  // center between p1 and p2
+  wall.position.set((p1.x + p2.x) / 2, 0, (p1.z + p2.z) / 2);
+  // rotate to face along the line
+  wall.rotation.y = -Math.atan2(dz, dx);
+
+  wallIdx++;
+  const matName = WALL_MATS[wallMatIdx].label;
+  wall.userData.label = `Wall ${wallIdx} (${matName})`;
+  wall.userData.selectable = true;
+  return wall;
+}
+
+// Place wall at position using preset width
+function placeWallPreset(worldPos, matCfg, height, preset) {
+  const w = WALL_PRESET_W[preset] || 2;
+  const hasDoor = preset === 'door';
+  const wall = mkWall(w, height, matCfg, hasDoor);
+  wall.position.set(worldPos.x, 0, worldPos.z);
+
+  wallIdx++;
+  wall.userData.label = `Wall ${wallIdx} (${WALL_MATS[wallMatIdx].label})`;
+  wall.userData.selectable = true;
+  return wall;
+}
+
+// Raycast onto y=0 ground plane
+function raycastGround(e) {
+  const rect = sceneCanvas.getBoundingClientRect();
+  const mx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  const my = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+  const ray = new THREE.Raycaster();
+  ray.setFromCamera({x:mx, y:my}, editorCam);
+  const plane = new THREE.Plane(new THREE.Vector3(0,1,0), 0);
+  const pt = new THREE.Vector3();
+  ray.ray.intersectPlane(plane, pt);
+  return pt;
+}
+
+// Wall preview canvas
+const wallPreviewCanvas = document.getElementById('wall-preview-canvas');
+const wpCtx = wallPreviewCanvas.getContext('2d');
+
+function resizeWallPreview() {
+  wallPreviewCanvas.width  = sceneEditor.clientWidth;
+  wallPreviewCanvas.height = sceneEditor.clientHeight;
+}
+
+function worldToScreen(wp) {
+  const ndc = wp.clone().project(editorCam);
+  return {
+    x: (ndc.x + 1) / 2 * wallPreviewCanvas.width,
+    y: (-ndc.y + 1) / 2 * wallPreviewCanvas.height,
+  };
+}
+
+function drawWallPreviewLine(start, end) {
+  wpCtx.clearRect(0, 0, wallPreviewCanvas.width, wallPreviewCanvas.height);
+  if (!start || !end) return;
+  const s = worldToScreen(start);
+  const e2 = worldToScreen(end);
+  const dx = end.x - start.x, dz = end.z - start.z;
+  const len = Math.sqrt(dx*dx + dz*dz).toFixed(2);
+
+  wpCtx.beginPath();
+  wpCtx.strokeStyle = '#e8ff47';
+  wpCtx.lineWidth = 2;
+  wpCtx.setLineDash([6,3]);
+  wpCtx.moveTo(s.x, s.y);
+  wpCtx.lineTo(e2.x, e2.y);
+  wpCtx.stroke();
+  wpCtx.setLineDash([]);
+
+  // endpoints
+  [s, e2].forEach(pt => {
+    wpCtx.beginPath();
+    wpCtx.arc(pt.x, pt.y, 5, 0, Math.PI*2);
+    wpCtx.fillStyle = '#e8ff47';
+    wpCtx.fill();
+  });
+
+  // length label at midpoint
+  const mid = { x: (s.x+e2.x)/2, y: (s.y+e2.y)/2 };
+  wpCtx.font = 'bold 12px Space Mono, monospace';
+  wpCtx.fillStyle = '#e8ff47';
+  wpCtx.textAlign = 'center';
+  wpCtx.fillText(`${len}m`, mid.x, mid.y - 10);
+}
+
+// Wall draw mode activate/deactivate
+function setWallDrawMode(on) {
+  wallDrawMode = on;
+  wallDrawStart = null;
+  wpCtx.clearRect(0, 0, wallPreviewCanvas.width, wallPreviewCanvas.height);
+  document.getElementById('wall-draw-hint').classList.toggle('show', on);
+  document.getElementById('btn-wall-draw').classList.toggle('on', on);
+  sceneCanvas.style.cursor = on ? 'crosshair' : '';
+}
+
+// Wall material dots UI
+const wallMatDotsEl = document.getElementById('wall-mat-dots');
+WALL_MATS.forEach((m, i) => {
+  const d = document.createElement('div');
+  d.className = 'mat-dot' + (i===0?' on':'');
+  d.style.background = '#' + m.color.toString(16).padStart(6,'0');
+  d.title = m.label;
+  d.onclick = () => {
+    wallMatIdx = i;
+    document.querySelectorAll('.mat-dot').forEach((x,j) => x.classList.toggle('on', j===i));
+  };
+  wallMatDotsEl.appendChild(d);
+});
+
+// Wall size presets
+document.querySelectorAll('[data-wsize]').forEach(b => {
+  b.addEventListener('click', () => {
+    wallPreset = b.dataset.wsize;
+    document.querySelectorAll('[data-wsize]').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+  });
+});
+
+// Wall height slider
+document.getElementById('wall-h-slider').addEventListener('input', e => {
+  wallHeight = +e.target.value;
+  document.getElementById('wall-h-val').textContent = wallHeight;
+});
+
+// Draw wall button
+document.getElementById('btn-wall-draw').addEventListener('click', () => {
+  setWallDrawMode(!wallDrawMode);
+  if (wallDrawMode) showNotif('Wall Draw Mode — click to place start point');
+});
+
+// ══════════════════════════════════════════
+// OVERRIDE SCENE CANVAS MOUSE for wall draw
+// ══════════════════════════════════════════
+// We intercept clicks in wall draw mode by adding listeners that fire
+// before the regular orbit/selection logic
+sceneCanvas.addEventListener('mousemove', e => {
+  if (!wallDrawMode) return;
+  const pt = raycastGround(e);
+  if (!pt) return;
+  if (wallDrawStart) {
+    drawWallPreviewLine(wallDrawStart, pt);
+  } else {
+    // show a crosshair dot at hover point
+    wpCtx.clearRect(0, 0, wallPreviewCanvas.width, wallPreviewCanvas.height);
+    const s = worldToScreen(pt);
+    wpCtx.beginPath();
+    wpCtx.arc(s.x, s.y, 6, 0, Math.PI*2);
+    wpCtx.strokeStyle = '#e8ff47';
+    wpCtx.lineWidth = 2;
+    wpCtx.stroke();
+    wpCtx.beginPath();
+    wpCtx.arc(s.x, s.y, 2, 0, Math.PI*2);
+    wpCtx.fillStyle = '#e8ff47';
+    wpCtx.fill();
+  }
+});
+
+sceneCanvas.addEventListener('click', e => {
+  if (!wallDrawMode) return;
+  e.stopImmediatePropagation();
+  const pt = raycastGround(e);
+  if (!pt) return;
+
+  if (!wallDrawStart) {
+    // First click — set start
+    wallDrawStart = pt.clone();
+    showNotif('Start set — click end point (or click again to place preset)');
+  } else {
+    // Second click — place wall between start and current
+    const dx = pt.x - wallDrawStart.x, dz = pt.z - wallDrawStart.z;
+    const len = Math.sqrt(dx*dx + dz*dz);
+    const matCfg = WALL_MATS[wallMatIdx];
+    const hasDoor = wallPreset === 'door';
+    let wall;
+    if (len > 0.2) {
+      wall = placeWallFromPoints(wallDrawStart, pt, matCfg, wallHeight, hasDoor);
+    } else {
+      // Same spot — place preset width wall
+      wall = placeWallPreset(pt, matCfg, wallHeight, wallPreset);
+    }
+    if (wall) {
+      scene.add(wall);
+      userObjects.push(wall);
+      selectObj(wall);
+      updateObjList();
+      showNotif(`Placed: ${wall.userData.label}`);
+    }
+    wallDrawStart = null;
+    wpCtx.clearRect(0, 0, wallPreviewCanvas.width, wallPreviewCanvas.height);
+    // Stay in draw mode for rapid wall placement — ESC to exit
+  }
+}, true); // capture phase so it runs before orbit handler
+
+// ══════════════════════════════════════════
+// CHARACTERS
+// ══════════════════════════════════════════
+let charIdx = 0;
+function mkCharacter(type) {
+  charIdx++;
+  const male = type === 'man';
+  const g = new THREE.Group();
+  g.userData.type = type;
+  g.userData.selectable = true;
+  g.userData.label = `${male?'MAN':'WOMAN'} ${charIdx}`;
+
+  const skin = new THREE.MeshLambertMaterial({color:0xf5c5a0});
+  const body = new THREE.MeshLambertMaterial({color:male?0x2255aa:0xaa2255});
+  const pant = new THREE.MeshLambertMaterial({color:male?0x223344:0x552244});
+  const hair = new THREE.MeshLambertMaterial({color:male?0x3a2510:0x1a0a05});
+
+  const hd = new THREE.Mesh(new THREE.SphereGeometry(0.2,10,8), skin);
+  hd.position.y=1.82; hd.castShadow=true; g.add(hd);
+  const nk = new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.07,0.14,8), skin);
+  nk.position.y=1.58; g.add(nk);
+  const tw = male ? 0.36 : 0.3;
+  const tr = new THREE.Mesh(new THREE.BoxGeometry(tw,0.55,0.2), body);
+  tr.position.y=1.22; tr.castShadow=true; g.add(tr);
+  const hp = new THREE.Mesh(new THREE.BoxGeometry(male?0.28:0.32,0.25,0.18), pant);
+  hp.position.y=0.9; g.add(hp);
+  [-1,1].forEach(s=>{
+    const ax = s*(tw/2+0.08);
+    const ua = new THREE.Mesh(new THREE.CylinderGeometry(0.055,0.055,0.4,8), body);
+    ua.position.set(ax,1.18,0); ua.rotation.z=s*0.1; ua.castShadow=true; g.add(ua);
+    const la = new THREE.Mesh(new THREE.CylinderGeometry(0.048,0.048,0.36,8), skin);
+    la.position.set(ax*1.05,0.82,0); g.add(la);
+  });
+  [-1,1].forEach(s=>{
+    const lx = s*0.1;
+    const ul = new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.07,0.4,8), pant);
+    ul.position.set(lx,0.68,0); ul.castShadow=true; g.add(ul);
+    const ll = new THREE.Mesh(new THREE.CylinderGeometry(0.065,0.055,0.44,8), new THREE.MeshLambertMaterial({color:male?0x1a2233:0x1a1a28}));
+    ll.position.set(lx,0.25,0); g.add(ll);
+    const ft = new THREE.Mesh(new THREE.BoxGeometry(0.1,0.07,0.2), new THREE.MeshLambertMaterial({color:0x111111}));
+    ft.position.set(lx,0.03,0.04); g.add(ft);
+  });
+  if (!male) {
+    const sk = new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.28,0.35,12), new THREE.MeshLambertMaterial({color:0x882255}));
+    sk.position.y=0.82; g.add(sk);
+  }
+  const hr = new THREE.Mesh(new THREE.SphereGeometry(0.21,10,8,0,Math.PI*2,0,male?Math.PI*0.55:Math.PI), hair);
+  hr.position.y=male?1.88:1.85; if(!male){hr.scale.set(1,1.2,1);}  g.add(hr);
+  if (!male) {
+    const pn = new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.02,0.3,8), hair);
+    pn.position.set(0,1.82,-0.22); pn.rotation.x=0.3; g.add(pn);
+  }
+  // label
+  const lc = document.createElement('canvas');
+  lc.width=128; lc.height=32;
+  const lctx = lc.getContext('2d');
+  lctx.fillStyle = male ? '#4488ff' : '#ff44aa';
+  lctx.font = 'bold 18px monospace';
+  lctx.textAlign = 'center';
+  lctx.fillText(g.userData.label, 64, 22);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(lc),transparent:true}));
+  sp.position.y=2.25; sp.scale.set(1.2,0.3,1);
+  g.add(sp);
+  return g;
+}
+
+// ══════════════════════════════════════════
+// SCENE CONFIGS
+// ══════════════════════════════════════════
+const SCENES = {
+  cafe:   {ground:0x3d2b1f, fog:0x0d0804, amb:0x5a3a28, label:'CAFE',
+            props:[{t:'table',p:[2,0,1]},{t:'table',p:[-2,0,2]},{t:'table',p:[0,0,-3]},{t:'chair',p:[2.8,0,1]},{t:'chair',p:[1.2,0,1]}]},
+  park:   {ground:0x2a4018, fog:0x040a02, amb:0x2a4818, label:'PARK',
+            props:[{t:'bench',p:[3,0,2]},{t:'bench',p:[-3,0,-1]},{t:'tree',p:[6,0,-3]},{t:'tree',p:[-5,0,4]},{t:'tree',p:[2,0,-5]}]},
+  office: {ground:0x252533, fog:0x05050e, amb:0x2a3355, label:'OFFICE',
+            props:[{t:'desk',p:[2,0,0]},{t:'desk',p:[-2,0,0]},{t:'desk',p:[0,0,-3]},{t:'chair',p:[2,0,0.7]},{t:'chair',p:[-2,0,0.7]}]},
+  studio: {ground:0x141414, fog:0x030303, amb:0x1a1a1a, label:'STUDIO',
+            props:[{t:'camrig',p:[4,0,3]},{t:'lightrig',p:[-3,0,2]},{t:'lightrig',p:[3,0,-2]}]},
+  street: {ground:0x222228, fog:0x060608, amb:0x202838, label:'STREET',
+            props:[{t:'lamp',p:[4,0,0]},{t:'lamp',p:[-4,0,-5]},{t:'bench',p:[0,0,3]},{t:'bench',p:[5,0,-3]}]},
+};
+
+function loadScene(name) {
+  while(scenePropsGroup.children.length) scenePropsGroup.remove(scenePropsGroup.children[0]);
+  deselectAll();
+  const cfg = SCENES[name];
+  ground.material.color.setHex(cfg.ground);
+  renderer.setClearColor(cfg.fog);
+  camRenderer.setClearColor(cfg.fog);
+  scene.fog.color.setHex(cfg.fog);
+  ambientLight.color.setHex(cfg.amb);
+  cfg.props.forEach(pr => {
+    const obj = buildProp(pr.t);
+    obj.position.set(...pr.p);
+    scenePropsGroup.add(obj);
+  });
+  currentSceneName = name;
+  document.getElementById('st-scene').textContent = cfg.label;
+  updateObjList();
+  showNotif(`Scene: ${cfg.label}`);
+}
+
+// ══════════════════════════════════════════
+// SELECTION
+// ══════════════════════════════════════════
+const raycaster = new THREE.Raycaster();
+const mouse2 = new THREE.Vector2();
+
+function handleSelection(e) {
+  if (txDragging) return;
+  const rect = sceneCanvas.getBoundingClientRect();
+  mouse2.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  mouse2.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(mouse2, editorCam);
+  let hit = null;
+  for (const obj of userObjects) {
+    if (raycaster.intersectObject(obj, true).length > 0) { hit = obj; break; }
+  }
+  hit ? selectObj(hit) : deselectAll();
+}
+
+function selectObj(obj) {
+  selectedObj = obj;
+  txCtrl.attach(obj);
+  txCtrl.setMode(txMode);
+  document.getElementById('st-sel').textContent = obj.userData.label || 'obj';
+  updateObjList();
+}
+function deselectAll() {
+  txCtrl.detach();
+  selectedObj = null;
+  document.getElementById('st-sel').textContent = '—';
+  updateObjList();
+}
+function deleteSelected() {
+  if (!selectedObj) return;
+  txCtrl.detach();
+  scene.remove(selectedObj);
+  userObjects = userObjects.filter(o => o !== selectedObj);
+  selectedObj = null;
+  document.getElementById('st-sel').textContent = '—';
+  updateObjList();
+}
+function updateObjList() {
+  const list = document.getElementById('obj-list');
+  list.innerHTML = '';
+  document.getElementById('st-count').textContent = userObjects.length;
+  userObjects.forEach((obj, i) => {
+    const div = document.createElement('div');
+    div.className = 'oi' + (obj === selectedObj ? ' sel' : '');
+    div.innerHTML = `<span class="on2">${obj.userData.label||'Obj'+(i+1)}</span><span class="od" data-i="${i}">✕</span>`;
+    div.querySelector('.on2').onclick = () => selectObj(obj);
+    div.querySelector('.od').onclick = (e) => {
+      e.stopPropagation();
+      txCtrl.detach();
+      if (selectedObj === obj) { selectedObj = null; document.getElementById('st-sel').textContent='—'; }
+      scene.remove(obj);
+      userObjects.splice(i, 1);
+      updateObjList();
+    };
+    list.appendChild(div);
+  });
+}
+
+// ══════════════════════════════════════════
+// RESIZE
+// ══════════════════════════════════════════
+const ASPECTS = {'16x9':16/9,'9x16':9/16,'4x3':4/3,'1x1':1};
+let currentAspect = '16x9';
+
+function resizeAll() {
+  const ew = sceneEditor.clientWidth || 1;
+  const eh = sceneEditor.clientHeight || 1;
+  renderer.setSize(ew, eh);
+  editorCam.aspect = ew / eh;
+  editorCam.updateProjectionMatrix();
+
+  const pb = document.getElementById('cam-pb');
+  const bw = pb.clientWidth || 360;
+  const bh = pb.clientHeight || 200;
+  const ar = ASPECTS[currentAspect] || 16/9;
+  let cw = bw - 6, ch = Math.round(cw / ar);
+  if (ch > bh - 6) { ch = bh - 6; cw = Math.round(ch * ar); }
+  cw = Math.max(cw, 80); ch = Math.max(ch, 60);
+
+  const wrap = document.getElementById('cam-wrap');
+  wrap.style.width = cw+'px'; wrap.style.height = ch+'px';
+  camCanvas.width = cw; camCanvas.height = ch;
+  camCanvas.style.width = cw+'px'; camCanvas.style.height = ch+'px';
+
+  const dc = document.getElementById('doodle-canvas');
+  dc.width = cw; dc.height = ch;
+  dc.style.width = cw+'px'; dc.style.height = ch+'px';
+
+  const rof = document.getElementById('rof-overlay');
+  rof.setAttribute('width', cw); rof.setAttribute('height', ch);
+
+  camRenderer.setSize(cw, ch);
+  shotCam.aspect = ar;
+  shotCam.updateProjectionMatrix();
+}
+
+window.addEventListener('resize', () => setTimeout(() => { resizeAll(); resizeWallPreview(); }, 50));
+
+// ══════════════════════════════════════════
+// UI WIRING
+// ══════════════════════════════════════════
+document.getElementById('scene-sel').addEventListener('change', e => loadScene(e.target.value));
+
+document.getElementById('btn-man').addEventListener('click', () => {
+  const m = mkCharacter('man');
+  m.position.set((Math.random()-.5)*6, 0, (Math.random()-.5)*6);
+  scene.add(m); userObjects.push(m); selectObj(m); updateObjList();
+});
+document.getElementById('btn-woman').addEventListener('click', () => {
+  const w = mkCharacter('woman');
+  w.position.set((Math.random()-.5)*6, 0, (Math.random()-.5)*6);
+  scene.add(w); userObjects.push(w); selectObj(w); updateObjList();
+});
+
+document.querySelectorAll('[data-prop]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const obj = buildProp(btn.dataset.prop);
+    obj.userData.label = btn.dataset.prop.charAt(0).toUpperCase()+btn.dataset.prop.slice(1)+' '+(userObjects.length+1);
+    obj.userData.selectable = true;
+    obj.position.set((Math.random()-.5)*8, 0, (Math.random()-.5)*8);
+    scene.add(obj); userObjects.push(obj); selectObj(obj); updateObjList();
+  });
+});
+
+document.querySelectorAll('.mbtn').forEach(b => b.addEventListener('click', ()=>setTxMode(b.dataset.mode)));
+document.getElementById('btn-desel').addEventListener('click', deselectAll);
+
+document.querySelectorAll('[data-tg]').forEach(el => {
+  el.addEventListener('click', () => {
+    el.classList.toggle('on');
+    const v = el.classList.contains('on');
+    const t = el.dataset.tg;
+    if (t==='ground')  { ground.visible = v; }
+    if (t==='shadows') { renderer.shadowMap.enabled = v; camRenderer.shadowMap.enabled = v; sunLight.castShadow = v; }
+    if (t==='props')   { scenePropsGroup.visible = v; }
+  });
+});
+
+document.getElementById('btn-grid').addEventListener('click', () => {
+  gridHelper.visible = !gridHelper.visible;
+  document.getElementById('btn-grid').classList.toggle('on', gridHelper.visible);
+});
+document.getElementById('btn-rof').addEventListener('click', () => {
+  const rof = document.getElementById('rof-overlay');
+  rof.classList.toggle('show');
+  document.getElementById('btn-rof').classList.toggle('on', rof.classList.contains('show'));
+});
+
+function setAspect(v) {
+  currentAspect = v;
+  document.getElementById('aspect-sel').value = v;
+  document.getElementById('aspect-sel2').value = v;
+  resizeAll();
+}
+document.getElementById('aspect-sel').addEventListener('change', e => setAspect(e.target.value));
+document.getElementById('aspect-sel2').addEventListener('change', e => setAspect(e.target.value));
+
+document.getElementById('fov-slider').addEventListener('input', e => {
+  const v = +e.target.value;
+  shotCam.fov = v; shotCam.updateProjectionMatrix();
+  document.getElementById('cfov').textContent = v;
+});
+
+document.getElementById('btn-savecam').addEventListener('click', () => {
+  const p = shotCam.position;
+  const data = {
+    position:{x:+p.x.toFixed(4),y:+p.y.toFixed(4),z:+p.z.toFixed(4)},
+    rotation:{x:+shotCam.rotation.x.toFixed(4),y:+shotCam.rotation.y.toFixed(4),z:+shotCam.rotation.z.toFixed(4)},
+    fov: shotCam.fov,
+    target:{x:+shotOrbit.target.x.toFixed(4),y:+shotOrbit.target.y.toFixed(4),z:+shotOrbit.target.z.toFixed(4)}
+  };
+  console.log('📷 SHOT CAMERA:', JSON.stringify(data, null, 2));
+  showNotif('Camera saved to console!');
+});
+
+// ══════════════════════════════════════════
+// DOODLE
+// ══════════════════════════════════════════
+const doodleCanvas = document.getElementById('doodle-canvas');
+const dCtx = doodleCanvas.getContext('2d');
+let dTool='pen', dColor='#e8ff47', dSize=3;
+let dDrawing=false, dSX, dSY, dSnap;
+const dHist = [];
+
+const DCOLS = ['#e8ff47','#ff4766','#47aaff','#ffffff','#ff9020','#cc44ff'];
+const dcolsEl = document.getElementById('dcols');
+DCOLS.forEach(c => {
+  const d = document.createElement('div');
+  d.className = 'dc'+(c===dColor?' on':'');
+  d.style.background = c;
+  d.onclick = () => { dColor=c; document.querySelectorAll('.dc').forEach(x=>x.classList.remove('on')); d.classList.add('on'); };
+  dcolsEl.appendChild(d);
+});
+const dcc = document.createElement('input');
+dcc.type='color'; dcc.value='#ffffff';
+dcc.style.cssText='width:16px;height:16px;border-radius:50%;border:none;cursor:pointer;padding:0;background:none;flex-shrink:0;';
+dcc.oninput = e => dColor = e.target.value;
+dcolsEl.appendChild(dcc);
+
+document.getElementById('brush-sz').addEventListener('input', e => {
+  dSize=+e.target.value; document.getElementById('sz-val').textContent=dSize;
+});
+
+document.querySelectorAll('.dtbtn').forEach(b => {
+  b.addEventListener('click', () => {
+    const t = b.dataset.dt;
+    if (t==='undo')  { if(dHist.length) dCtx.putImageData(dHist.pop(),0,0); return; }
+    if (t==='clear') { dHist.push(dCtx.getImageData(0,0,doodleCanvas.width,doodleCanvas.height)); dCtx.clearRect(0,0,doodleCanvas.width,doodleCanvas.height); return; }
+    dTool=t;
+    document.querySelectorAll('.dtbtn').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    doodleCanvas.style.cursor = t==='erase'?'cell':t==='text'?'text':'crosshair';
+  });
+});
+
+function dPos(e) {
+  const r = doodleCanvas.getBoundingClientRect();
+  return [e.clientX-r.left, e.clientY-r.top];
+}
+doodleCanvas.addEventListener('mousedown', e => {
+  e.stopPropagation();
+  const [x,y] = dPos(e);
+  dSX=x; dSY=y; dDrawing=true;
+  dSnap = dCtx.getImageData(0,0,doodleCanvas.width,doodleCanvas.height);
+  dHist.push(dSnap); if(dHist.length>30) dHist.shift();
+  if (dTool==='text') {
+    const txt = prompt('Text:');
+    if (txt) { dCtx.font=`bold ${Math.max(dSize*4,13)}px 'Space Mono',monospace`; dCtx.fillStyle=dColor; dCtx.fillText(txt,x,y); }
+    dDrawing=false; return;
+  }
+  if (dTool==='pen'||dTool==='erase') { dCtx.beginPath(); dCtx.moveTo(x,y); }
+});
+doodleCanvas.addEventListener('mousemove', e => {
+  e.stopPropagation();
+  if (!dDrawing) return;
+  const [x,y] = dPos(e);
+  if (dTool==='pen') {
+    dCtx.strokeStyle=dColor; dCtx.lineWidth=dSize; dCtx.lineCap='round'; dCtx.lineJoin='round';
+    dCtx.lineTo(x,y); dCtx.stroke();
+  } else if (dTool==='erase') {
+    dCtx.globalCompositeOperation='destination-out';
+    dCtx.strokeStyle='rgba(0,0,0,1)'; dCtx.lineWidth=dSize*4; dCtx.lineCap='round';
+    dCtx.lineTo(x,y); dCtx.stroke(); dCtx.globalCompositeOperation='source-over';
+  } else if (dTool==='arrow') {
+    dCtx.putImageData(dSnap,0,0); dDrawArrow(dSX,dSY,x,y);
+  }
+});
+doodleCanvas.addEventListener('mouseup', e => {
+  e.stopPropagation();
+  if (!dDrawing) return; dDrawing=false;
+  const [x,y] = dPos(e);
+  if (dTool==='arrow') { dCtx.putImageData(dSnap,0,0); dDrawArrow(dSX,dSY,x,y); }
+  dCtx.globalCompositeOperation='source-over';
+});
+
+function dDrawArrow(x1,y1,x2,y2) {
+  const hl=14+dSize, a=Math.atan2(y2-y1,x2-x1);
+  dCtx.beginPath(); dCtx.strokeStyle=dColor; dCtx.lineWidth=dSize; dCtx.lineCap='round';
+  dCtx.moveTo(x1,y1); dCtx.lineTo(x2,y2); dCtx.stroke();
+  dCtx.beginPath(); dCtx.fillStyle=dColor;
+  dCtx.moveTo(x2,y2);
+  dCtx.lineTo(x2-hl*Math.cos(a-Math.PI/6),y2-hl*Math.sin(a-Math.PI/6));
+  dCtx.lineTo(x2-hl*Math.cos(a+Math.PI/6),y2-hl*Math.sin(a+Math.PI/6));
+  dCtx.closePath(); dCtx.fill();
+}
+
+// ══════════════════════════════════════════
+// CAPTURE
+// ══════════════════════════════════════════
+document.getElementById('btn-capture').addEventListener('click', () => {
+  camRenderer.render(scene, shotCam);
+  const cw=camCanvas.width, ch=camCanvas.height;
+  const merge = document.createElement('canvas');
+  merge.width=cw; merge.height=ch;
+  const mCtx = merge.getContext('2d');
+  mCtx.drawImage(camCanvas, 0, 0);
+  mCtx.drawImage(doodleCanvas, 0, 0);
+  mCtx.fillStyle='rgba(0,0,0,0.65)';
+  mCtx.fillRect(0,0,cw,22); mCtx.fillRect(0,ch-22,cw,22);
+  mCtx.font='bold 11px monospace'; mCtx.fillStyle='#e8ff47';
+  mCtx.fillText(`PREVIZ — ${currentSceneName.toUpperCase()} — ${new Date().toLocaleString()}`, 8, 15);
+  mCtx.fillStyle='#47aaff';
+  mCtx.fillText(`CAM ${shotCam.position.x.toFixed(1)},${shotCam.position.y.toFixed(1)},${shotCam.position.z.toFixed(1)} | FOV ${shotCam.fov}°`, 8, ch-8);
+  const link=document.createElement('a');
+  link.download='Previz Shot.jpg';
+  link.href=merge.toDataURL('image/jpeg', 0.95);
+  link.click();
+  showNotif('✓ Previz Shot.jpg saved!');
+});
+
+// ══════════════════════════════════════════
+// NOTIF
+// ══════════════════════════════════════════
+function showNotif(msg) {
+  const n = document.getElementById('notif');
+  n.textContent=msg; n.classList.add('show');
+  clearTimeout(n._t); n._t=setTimeout(()=>n.classList.remove('show'), 2500);
+}
+
+// ══════════════════════════════════════════
+// LINK CAMERA TOGGLE
+// ══════════════════════════════════════════
+let camLinked = true;
+
+document.getElementById('btn-link-cam').addEventListener('click', () => {
+  camLinked = !camLinked;
+  const btn = document.getElementById('btn-link-cam');
+  if (camLinked) {
+    btn.textContent = '🔗 LINKED';
+    btn.style.background = 'rgba(232,255,71,0.12)';
+    btn.style.borderColor = 'var(--accent)';
+    btn.style.color = 'var(--accent)';
+    // Snap shot cam to current editor cam immediately
+    shotCam.position.copy(editorCam.position);
+    shotCam.quaternion.copy(editorCam.quaternion);
+    shotOrbit.target.copy(editorOrbit.target);
+    const off = shotCam.position.clone().sub(shotOrbit.target);
+    shotOrbit.sph.setFromVector3(off);
+    showNotif('Shot cam linked to editor — navigate left panel to frame shot');
+  } else {
+    btn.textContent = '⛓ FREE';
+    btn.style.background = 'rgba(100,100,130,0.12)';
+    btn.style.borderColor = '#3a3a50';
+    btn.style.color = '#888899';
+    showNotif('Shot cam independent — use right panel to adjust');
+  }
+});
+
+// ══════════════════════════════════════════
+// RENDER LOOP
+// ══════════════════════════════════════════
+function animate() {
+  requestAnimationFrame(animate);
+
+  // If linked: shot cam always mirrors the editor cam
+  if (camLinked) {
+    shotCam.position.copy(editorCam.position);
+    shotCam.quaternion.copy(editorCam.quaternion);
+    // keep shotOrbit in sync so it doesn't snap when you unlink
+    shotOrbit.target.copy(editorOrbit.target);
+    const off = shotCam.position.clone().sub(shotOrbit.target);
+    shotOrbit.sph.setFromVector3(off);
+  }
+
+  // sync cam helper to shot cam
+  camHelperMesh.position.copy(shotCam.position);
+  camHelperMesh.quaternion.copy(shotCam.quaternion);
+  const posArr = camTargetLine.geometry.attributes.position;
+  posArr.setXYZ(0, shotCam.position.x, shotCam.position.y, shotCam.position.z);
+  posArr.setXYZ(1, shotOrbit.target.x, shotOrbit.target.y, shotOrbit.target.z);
+  posArr.needsUpdate = true;
+
+  renderer.render(scene, editorCam);
+  camRenderer.render(scene, shotCam);
+
+  const p = shotCam.position;
+  document.getElementById('cx').textContent = p.x.toFixed(2);
+  document.getElementById('cy').textContent = p.y.toFixed(2);
+  document.getElementById('cz').textContent = p.z.toFixed(2);
+  document.getElementById('st-cam').textContent = `${p.x.toFixed(1)}, ${p.y.toFixed(1)}, ${p.z.toFixed(1)}`;
+}
+
+// ══════════════════════════════════════════
+// BOOT
+// ══════════════════════════════════════════
+setTimeout(() => { resizeAll(); resizeWallPreview(); }, 100);
+loadScene('cafe');
+animate();
+</script>
+</body>
+</html>
